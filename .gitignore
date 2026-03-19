@@ -1,0 +1,19 @@
+# 依赖 & 构建产物
+node_modules/
+dist/
+
+# 运行时状态
+.bot.pid
+*.dedup.json
+logs/
+feishu_files/
+
+# 配置（含敏感信息）
+.env
+
+# Claude Code 内部状态
+.claude/
+
+# 系统 & 打包
+.DS_Store
+*.zip
