@@ -5,7 +5,7 @@
 ## 前置要求
 
 - [Node.js](https://nodejs.org/) 18+
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) 已安装并登录（`claude` 命令可用）
+- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) 2.1+ 已安装并登录（`claude` 命令可用，`claude --version` 可查看版本）
 - 飞书开放平台应用（见下方配置步骤）
 
 ## 使用注意
@@ -98,6 +98,7 @@
 6) 查看状态
 7) 查看日志（Ctrl+C 退出）
 8) 清理日志
+9) 升级到新版本
 0) 退出
 ```
 
@@ -105,6 +106,7 @@
 
 ```bash
 ./bot.sh install   # 安装 / 重新安装
+./bot.sh update    # 更新到最新 release 版本
 ./bot.sh config    # 修改配置（AppID、Secret、工作区等）
 ./bot.sh start     # 后台启动
 ./bot.sh stop      # 停止
@@ -126,6 +128,7 @@
 | `/model` | 查看当前模型 |
 | `/model sonnet` | 切换到 Claude Sonnet 4.6（默认） |
 | `/model opus` | 切换到 Claude Opus 4.6 |
+| `/model opusplan` | 切换到 Opus Plan（规划用 Opus，执行用 Sonnet，需 CLI 2.1+） |
 | `/model haiku` | 切换到 Claude Haiku 4.5 |
 | `/status` | 查看当前会话和模型状态 |
 | `/usage` | 查看本会话累计 token 用量和费用 |
