@@ -130,6 +130,18 @@ cmd_install() {
   echo "   4. 发布应用并等待管理员审批通过"
   echo ""
   green "配置审批通过后，双击「飞书机器人.command」，选择「2) 启动」即可。"
+
+  # 如果正在运行，询问是否重启
+  if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+    echo ""
+    read -rp "机器人正在运行，是否立即重启以生效？[Y/n]: " ans
+    ans="${ans:-Y}"
+    if [[ "$ans" =~ ^[Yy]$ ]]; then
+      cmd_restart
+    else
+      yellow "⚠️  新版本将在下次启动时生效"
+    fi
+  fi
 }
 
 # ── start ─────────────────────────────────────────────────────────────────────
@@ -272,6 +284,51 @@ cmd_logs() {
   tail -f "$LOG_FILE"
 }
 
+# ── update ────────────────────────────────────────────────────────────────────
+
+cmd_update() {
+  check_deps
+
+  echo "🔍 获取最新版本信息..."
+  git -C "$SCRIPT_DIR" fetch --tags
+
+  local latest_tag
+  latest_tag=$(git -C "$SCRIPT_DIR" tag --sort=-v:refname | head -1)
+
+  if [ -n "$latest_tag" ]; then
+    local current
+    current=$(git -C "$SCRIPT_DIR" describe --tags --exact-match 2>/dev/null || echo "")
+    if [ "$current" = "$latest_tag" ]; then
+      green "✅ 已是最新版本：$latest_tag"
+      return
+    fi
+    echo "⬆️  更新到 $latest_tag ..."
+    git -C "$SCRIPT_DIR" checkout "$latest_tag"
+  else
+    yellow "⚠️  未找到 release tag，拉取最新代码..."
+    git -C "$SCRIPT_DIR" pull
+  fi
+
+  echo "📦 安装依赖..."
+  cd "$SCRIPT_DIR" && npm install
+
+  echo "🔨 编译..."
+  npm run build
+
+  green "✅ 更新完成"
+
+  if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+    echo ""
+    read -rp "机器人正在运行，是否立即重启以生效？[Y/n]: " ans
+    ans="${ans:-Y}"
+    if [[ "$ans" =~ ^[Yy]$ ]]; then
+      cmd_restart
+    else
+      yellow "⚠️  新版本将在下次启动时生效"
+    fi
+  fi
+}
+
 # ── clean ─────────────────────────────────────────────────────────────────────
 
 cmd_clean() {
@@ -293,6 +350,7 @@ cmd_clean() {
 
 case "${1:-}" in
   install)  cmd_install  ;;
+  update)   cmd_update   ;;
   config)   cmd_config   ;;
   start)    cmd_start    ;;
   stop)     cmd_stop     ;;
@@ -305,6 +363,7 @@ case "${1:-}" in
     echo ""
     echo "命令："
     echo "  install   安装依赖、配置参数、编译"
+  echo "  update    更新到最新 release 版本"
     echo "  config    修改配置（AppID、Secret、工作区等）"
     echo "  start     后台启动机器人"
     echo "  stop      停止机器人"

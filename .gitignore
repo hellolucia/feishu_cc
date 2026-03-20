@@ -4,6 +4,7 @@ dist/
 
 # 运行时状态
 .bot.pid
+.update_check_result
 *.dedup.json
 logs/
 feishu_files/

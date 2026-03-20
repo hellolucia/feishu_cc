@@ -27,12 +27,49 @@ check_deps() {
   fi
 }
 
+# ── 后台检查新版本 ────────────────────────────────────────────────────────────
+
+UPDATE_AVAILABLE=""   # 有新版时设为新 tag 名
+UPDATE_CHECK_DONE=0  # fetch 完成标志
+
+UPDATE_TMP="$SCRIPT_DIR/.update_check_result"
+
+check_update_bg() {
+  rm -f "$UPDATE_TMP"
+  (
+    git -C "$SCRIPT_DIR" fetch --tags --quiet 2>/dev/null
+    latest=$(git -C "$SCRIPT_DIR" tag --sort=-v:refname 2>/dev/null | head -1)
+    current=$(git -C "$SCRIPT_DIR" tag --sort=-v:refname --merged HEAD 2>/dev/null | head -1)
+    if [ -n "$latest" ] && [ "$latest" != "$current" ]; then
+      echo "$latest" > "$UPDATE_TMP"
+    else
+      echo "" > "$UPDATE_TMP"
+    fi
+  ) &
+}
+
+poll_update_result() {
+  if [ -f "$UPDATE_TMP" ]; then
+    UPDATE_AVAILABLE=$(cat "$UPDATE_TMP")
+    rm -f "$UPDATE_TMP"
+    UPDATE_CHECK_DONE=1
+  fi
+}
+
 show_menu() {
+  poll_update_result
+
   clear
   cyan "╔══════════════════════════════════╗"
   cyan "║       飞书机器人控制台           ║"
   cyan "╚══════════════════════════════════╝"
   echo ""
+
+  # 新版本提醒（只在检测到新版时显示）
+  if [ -n "$UPDATE_AVAILABLE" ]; then
+    yellow "  [NEW] 发现新版本：$UPDATE_AVAILABLE，选 9 一键升级"
+    echo ""
+  fi
 
   # 显示当前状态
   local PID_FILE="$SCRIPT_DIR/.bot.pid"
@@ -51,13 +88,17 @@ show_menu() {
   echo "  6) 查看状态"
   echo "  7) 查看日志（Ctrl+C 退出）"
   echo "  8) 清理日志"
+  echo "  9) 升级到新版本"
   echo "  0) 退出"
   echo ""
 }
 
+# 启动时后台检查更新
+check_update_bg
+
 while true; do
   show_menu
-  read -rp "  请选择 [0-8]: " choice
+  read -rp "  请选择 [0-9]: " choice
   echo ""
 
   case "$choice" in
@@ -102,6 +143,14 @@ while true; do
       ;;
     8)
       bash "$SCRIPT_DIR/bot.sh" clean
+      echo ""
+      read -rp "按回车返回菜单..." _
+      ;;
+    9)
+      check_deps
+      bash "$SCRIPT_DIR/bot.sh" update
+      UPDATE_AVAILABLE=""
+      UPDATE_CHECK_DONE=1
       echo ""
       read -rp "按回车返回菜单..." _
       ;;
