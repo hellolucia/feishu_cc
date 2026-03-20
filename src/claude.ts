@@ -24,9 +24,10 @@ const usageAccum = new Map<string, UsageStat>(); // chatId → 累计用量
 // ── 模型预设 ──────────────────────────────────────────────────────────────────
 
 export const MODEL_PRESETS: { alias: string; model: string; label: string }[] = [
-  { alias: 'sonnet', model: 'sonnet', label: 'Claude Sonnet 4.6（默认）' },
-  { alias: 'opus',   model: 'opus',   label: 'Claude Opus 4.6（更强）' },
-  { alias: 'haiku',  model: 'haiku',  label: 'Claude Haiku 4.5（最快）' },
+  { alias: 'sonnet',   model: 'sonnet',   label: 'Claude Sonnet 4.6（默认）' },
+  { alias: 'opus',     model: 'opus',     label: 'Claude Opus 4.6（更强）' },
+  { alias: 'opusplan', model: 'opusplan', label: 'Claude Opus Plan（规划用 Opus，执行用 Sonnet）' },
+  { alias: 'haiku',    model: 'haiku',    label: 'Claude Haiku 4.5（最快）' },
 ];
 
 export function getModel(chatId: string): string {
