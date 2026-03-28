@@ -120,7 +120,7 @@ const dispatcher = new Lark.EventDispatcher({}).register({
       // ── 富文本消息（文字+图片混发）──────────────────────────────────────────
       if (msg.message_type === 'post') {
         try {
-          type PostElement = { tag: string; text?: string; image_key?: string };
+          type PostElement = { tag: string; text?: string; href?: string; image_key?: string; token?: string; obj_type?: string; title?: string; url?: string };
           const post = JSON.parse(msg.content) as { title?: string; content?: PostElement[][] };
           const parts: string[] = [];
           const imageKeys: string[] = [];
@@ -129,6 +129,11 @@ const dispatcher = new Lark.EventDispatcher({}).register({
           for (const para of post.content ?? []) {
             for (const el of para) {
               if (el.tag === 'text' && el.text) parts.push(el.text);
+              else if (el.tag === 'a' && el.href) parts.push(el.text ? `${el.text}(${el.href})` : el.href);
+              else if (el.tag === 'mention_doc') {
+                const url = el.url ?? (el.token ? `https://feishu.cn/${el.obj_type ?? 'docx'}/${el.token}` : null);
+                if (url) parts.push(el.title ? `${el.title}(${url})` : url);
+              }
               else if (el.tag === 'img' && el.image_key) imageKeys.push(el.image_key);
             }
           }

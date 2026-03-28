@@ -42,6 +42,13 @@
 | `im:message:send_as_bot` | 发送回复 |
 | `im:message.reactions:write_only` | 打字指示器 |
 | `cardkit:card:write` | 流式卡片输出 |
+| `docx:document:readonly` | 读取云文档 |
+| `docx:document` | 写入云文档 |
+| `docx:document.block:convert` | Markdown 转 blocks |
+| `docs:doc:readonly` | 下载文档内图片/文件 |
+| `docs:document.media:upload` | 向文档写入图片 |
+| `wiki:wiki:readonly` | 读取知识库 |
+| `wiki:wiki` | 写入知识库 |
 
 可复制以下 JSON 批量导入权限管理：
 
@@ -50,11 +57,19 @@
   "scopes": {
     "tenant": [
       "cardkit:card:write",
+      "cardkit:card:write",
+      "docx:document",
+      "docx:document.block:convert",
+      "docx:document:readonly",
+      "docs:doc:readonly",
+      "docs:document.media:upload",
       "im:message.group_at_msg:readonly",
       "im:message.p2p_msg:readonly",
       "im:message.reactions:write_only",
       "im:message:readonly",
-      "im:message:send_as_bot"
+      "im:message:send_as_bot",
+      "wiki:wiki",
+      "wiki:wiki:readonly"
     ],
     "user": []
   }

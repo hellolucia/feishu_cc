@@ -1,0 +1,34 @@
+# Changelog
+
+## [Unreleased]
+
+### feishu-doc skill 图片与局部更新支持
+
+**新增**
+- `fetch` 命令：文档中的图片现在以 `<image token="..." width="..." height="..." align="..."/>` 形式嵌入内容，不再静默忽略；含图片时返回 `hint` 字段提示数量
+- `download-media <token> <output_path>`：下载文档内图片或文件到本地
+- `update` 命令（stdin JSON）：支持 7 种局部更新模式
+  - `append` / `overwrite`：追加或全文覆盖
+  - `replace_range` / `replace_all`：定位替换或全文替换
+  - `insert_before` / `insert_after`：在匹配内容前后插入
+  - `delete_range`：删除匹配范围
+  - 通过 `selection`（文本定位，支持 `开头...结尾` 范围语法）或 `title_selection`（标题定位）确定操作范围
+- 写入时图片自动上传：`write`、`append`、`create`、`create-wiki`、`update` 写入含 `<image url="..."/>` 或 `![]()` 的 markdown 时，自动下载并上传图片到对应 block
+
+**权限**（需在飞书开放平台新增）
+- `docs:doc:readonly`：下载文档内图片/文件
+- `docs:document.media:upload`：向文档写入图片
+
+---
+
+## [0.1.0] - 2026-01-xx
+
+- 初始版本发布
+- 飞书 WebSocket 长连接接入 Claude Code CLI
+- 支持私聊 / 群 @ 消息
+- 流式卡片输出（CardKit，100ms 节流）
+- 图片、文件消息支持
+- 命令：`/new` `/stop` `/model` `/project` `/projects` `/status` `/usage`
+- `update` 命令：检测新版本并自动更新
+- `opusplan` 模型别名
+- feishu-doc skill：读取、写入、追加、创建云文档及知识库节点

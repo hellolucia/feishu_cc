@@ -121,6 +121,21 @@ cmd_install() {
   npm run build
 
   echo ""
+  SKILL_SRC="$SCRIPT_DIR/skills/feishu-doc"
+  SKILL_DST="$HOME/.claude/skills/feishu-doc"
+  if [ -d "$SKILL_SRC" ]; then
+    mkdir -p "$HOME/.claude/skills"
+    if [ -d "$SKILL_DST" ] && [ ! -f "$SKILL_DST/.installed-by-feishu-cc" ]; then
+      yellow "⚠️  ~/.claude/skills/feishu-doc 已存在（非本项目安装），跳过"
+    else
+      rm -rf "$SKILL_DST"
+      cp -r "$SKILL_SRC" "$SKILL_DST"
+      touch "$SKILL_DST/.installed-by-feishu-cc"
+      green "✅ 飞书文档 skill 已安装"
+    fi
+  fi
+
+  echo ""
   green "✅ 安装完成！"
   echo ""
   yellow "⚠️  启动前请先完成飞书应用配置："
