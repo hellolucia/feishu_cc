@@ -527,21 +527,28 @@ async function cmdSendFile(filePath, openId) {
   return { message_id: sendRes.data?.message_id, file_key: fileKey };
 }
 
-async function cmdDownloadMedia(token, outputPath) {
+async function cmdDownloadMedia(token, outputPath, docToken) {
   await mkdir(dirname(outputPath), { recursive: true });
 
-  const res = await client.drive.media.download({
-    path: { file_token: token },
-  });
+  const downloadParams = { path: { file_token: token } };
+  if (docToken) {
+    downloadParams.params = { extra: JSON.stringify({ drive_route_token: docToken }) };
+  }
+  const res = await client.drive.media.download(downloadParams);
 
-  // SDK returns a readable stream in res
-  await new Promise((resolve, reject) => {
-    const dest = createWriteStream(outputPath);
-    res.pipe(dest);
-    dest.on('finish', resolve);
-    dest.on('error', reject);
-    res.on('error', reject);
-  });
+  // SDK v2+ returns an object with writeFile/getReadableStream instead of a raw stream
+  if (typeof res.writeFile === 'function') {
+    await res.writeFile(outputPath);
+  } else {
+    // fallback for older SDK versions that return a readable stream directly
+    await new Promise((resolve, reject) => {
+      const dest = createWriteStream(outputPath);
+      res.pipe(dest);
+      dest.on('finish', resolve);
+      dest.on('error', reject);
+      res.on('error', reject);
+    });
+  }
 
   const { size } = await import('fs').then((fs) => fs.promises.stat(outputPath));
   return { path: outputPath, size };
@@ -773,8 +780,8 @@ async function main() {
       }
 
       case 'download-media': {
-        if (!args[0] || !args[1]) throw new Error('用法: feishu-doc.mjs download-media <token> <output_path>');
-        result = await cmdDownloadMedia(args[0], args[1]);
+        if (!args[0] || !args[1]) throw new Error('用法: feishu-doc.mjs download-media <token> <output_path> [doc_token]');
+        result = await cmdDownloadMedia(args[0], args[1], args[2]);
         break;
       }
 
