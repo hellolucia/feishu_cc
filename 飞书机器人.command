@@ -71,10 +71,19 @@ show_menu() {
     echo ""
   fi
 
-  # 显示当前状态
+  # 显示当前状态（PID 文件 + 进程名双重检测）
   local PID_FILE="$SCRIPT_DIR/.bot.pid"
-  if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
-    green "  状态：● 运行中（PID $(cat "$PID_FILE")）"
+  local bot_pid=""
+  if [ -f "$PID_FILE" ]; then
+    bot_pid=$(cat "$PID_FILE" | tr -d '[:space:]')
+    kill -0 "$bot_pid" 2>/dev/null || bot_pid=""
+  fi
+  if [ -z "$bot_pid" ]; then
+    bot_pid=$(pgrep -x "feishu_cc" 2>/dev/null | head -1)
+  fi
+  if [ -n "$bot_pid" ]; then
+    green "  状态：● 运行中"
+    green "  PID：$bot_pid"
   else
     yellow "  状态：● 未运行"
   fi

@@ -13,6 +13,14 @@ green()  { echo -e "\033[32m$*\033[0m"; }
 red()    { echo -e "\033[31m$*\033[0m"; }
 yellow() { echo -e "\033[33m$*\033[0m"; }
 
+# ── 进程查找 ─────────────────────────────────────────────────────────────────
+
+PROC_NAME="feishu_cc"
+# 通过进程名查找正在运行的机器人 PID（不依赖 PID 文件）
+find_bot_pid() {
+  pgrep -x "$PROC_NAME" 2>/dev/null | head -1
+}
+
 # ── 工具函数 ──────────────────────────────────────────────────────────────────
 
 # 交互式输入：有默认值时显示，直接回车保留
@@ -162,15 +170,22 @@ cmd_install() {
 # ── start ─────────────────────────────────────────────────────────────────────
 
 cmd_start() {
+  # 先检查是否已有进程在运行（PID 文件 + 进程名双重检测）
+  local existing_pid
   if [ -f "$PID_FILE" ]; then
-    local pid
-    pid=$(cat "$PID_FILE")
-    if kill -0 "$pid" 2>/dev/null; then
-      yellow "⚠️  机器人已在运行（PID $pid）"
+    existing_pid=$(cat "$PID_FILE")
+    if kill -0 "$existing_pid" 2>/dev/null; then
+      yellow "⚠️  机器人已在运行（PID $existing_pid）"
       return
     else
       rm -f "$PID_FILE"
     fi
+  fi
+  existing_pid=$(find_bot_pid)
+  if [ -n "$existing_pid" ]; then
+    yellow "⚠️  机器人已在运行（PID $existing_pid），但 PID 文件缺失，已自动修复"
+    echo "$existing_pid" > "$PID_FILE"
+    return
   fi
 
   if [ ! -f "$SCRIPT_DIR/dist/index.js" ]; then
@@ -204,21 +219,30 @@ cmd_start() {
 # ── stop ──────────────────────────────────────────────────────────────────────
 
 cmd_stop() {
-  if [ ! -f "$PID_FILE" ]; then
+  local pid=""
+
+  # 优先从 PID 文件获取
+  if [ -f "$PID_FILE" ]; then
+    pid=$(cat "$PID_FILE")
+    if ! kill -0 "$pid" 2>/dev/null; then
+      rm -f "$PID_FILE"
+      pid=""
+    fi
+  fi
+
+  # PID 文件无效时，通过进程名查找
+  if [ -z "$pid" ]; then
+    pid=$(find_bot_pid)
+  fi
+
+  if [ -z "$pid" ]; then
     yellow "机器人未在运行"
     return
   fi
 
-  local pid
-  pid=$(cat "$PID_FILE")
-  if kill -0 "$pid" 2>/dev/null; then
-    kill "$pid"
-    rm -f "$PID_FILE"
-    green "🛑 已停止（PID $pid）"
-  else
-    yellow "进程已不存在，清理 PID 文件"
-    rm -f "$PID_FILE"
-  fi
+  kill "$pid"
+  rm -f "$PID_FILE"
+  green "🛑 已停止（PID $pid）"
 }
 
 # ── config ────────────────────────────────────────────────────────────────────
@@ -272,20 +296,32 @@ cmd_restart() {
 # ── status ────────────────────────────────────────────────────────────────────
 
 cmd_status() {
-  if [ ! -f "$PID_FILE" ]; then
-    yellow "● 未运行"
-    return
+  local pid=""
+
+  # 优先从 PID 文件获取
+  if [ -f "$PID_FILE" ]; then
+    pid=$(cat "$PID_FILE")
+    if ! kill -0 "$pid" 2>/dev/null; then
+      rm -f "$PID_FILE"
+      pid=""
+    fi
   fi
 
-  local pid
-  pid=$(cat "$PID_FILE")
-  if kill -0 "$pid" 2>/dev/null; then
+  # PID 文件无效时，通过进程名查找
+  if [ -z "$pid" ]; then
+    pid=$(find_bot_pid)
+    if [ -n "$pid" ]; then
+      # 自动修复 PID 文件
+      echo "$pid" > "$PID_FILE"
+    fi
+  fi
+
+  if [ -n "$pid" ]; then
     green "● 运行中"
     echo "  PID: $pid"
     echo "  日志文件：$LOG_FILE"
   else
-    yellow "● 已停止（PID 文件残留，运行 start 可重启）"
-    rm -f "$PID_FILE"
+    yellow "● 未运行"
   fi
 }
 

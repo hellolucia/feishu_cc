@@ -19,3 +19,4 @@ feishu_files/
 .DS_Store
 *.zip
 CLAUDE.md
+.bin/
