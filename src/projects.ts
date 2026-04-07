@@ -12,7 +12,17 @@ function discoverProjects(): Record<string, string> {
   try {
     return Object.fromEntries(
       fs.readdirSync(workspaceDir, { withFileTypes: true })
-        .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
+        .filter((d) => {
+          if (d.name.startsWith('.')) return false;
+          if (d.isDirectory()) return true;
+          // 符号链接：解析后判断是否指向目录
+          if (d.isSymbolicLink()) {
+            try {
+              return fs.statSync(path.join(workspaceDir, d.name)).isDirectory();
+            } catch { return false; }
+          }
+          return false;
+        })
         .map((d) => [d.name, path.join(workspaceDir, d.name)]),
     );
   } catch {
