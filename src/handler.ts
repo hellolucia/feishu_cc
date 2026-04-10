@@ -160,7 +160,7 @@ export async function handleMessage(
   // /new — 新建 session
   if (/^\/new(\s+\S+)?$/.test(input)) {
     newSession(chatId);
-    const projectName = input.split(/\s+/)[1] ?? (process.env.DEFAULT_PROJECT ?? '');
+    const projectName = input.split(/\s+/)[1] ?? getChatProject(chatId) ?? (process.env.DEFAULT_PROJECT ?? '');
     await replyText(messageId, `✅ 已开始新会话，当前项目：${projectName}`);
     return;
   }
