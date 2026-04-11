@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### 修复 /new 命令当前项目显示为空
+
+**问题**：执行 `/new` 后回复"已开始新会话，当前项目："时，项目名为空，即使已通过 `/project` 切换过项目。
+
+**原因**：`/new` 命令只从命令参数（如 `/new myproject`）或环境变量 `DEFAULT_PROJECT` 读取项目名，未读取已保存的 `getChatProject(chatId)`。
+
+**修复**：优先级改为 命令参数 → `getChatProject(chatId)` → `DEFAULT_PROJECT` 环境变量。
+
+---
+
 ### feishu-doc skill 图片与局部更新支持
 
 **新增**
