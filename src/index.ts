@@ -51,10 +51,38 @@ function enqueue(chatId: string, fn: () => Promise<void>): void {
 
 const wsClient = new Lark.WSClient({ appId, appSecret });
 
+// 启动时获取机器人自己的 open_id，用于群聊 @ 过滤
+let botOpenId: string | null = null;
+(async () => {
+  try {
+    const tokenRes = await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ app_id: appId, app_secret: appSecret }),
+    });
+    const { tenant_access_token: token } = await tokenRes.json() as { tenant_access_token?: string };
+    if (!token) throw new Error('no tenant_access_token');
+    const infoRes = await fetch('https://open.feishu.cn/open-apis/bot/v3/info', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const { bot } = await infoRes.json() as { bot?: { open_id?: string } };
+    botOpenId = bot?.open_id ?? null;
+    console.log(`[bot] open_id=${botOpenId}`);
+  } catch (err) {
+    console.error('[bot] 获取 open_id 失败，群聊将响应所有 mention:', err);
+  }
+})();
+
 const dispatcher = new Lark.EventDispatcher({}).register({
   'im.message.receive_v1': async (data) => {
     const msg = data.message;
-    if (msg.chat_type !== 'p2p' && !data.message.mentions?.length) return;
+    if (msg.chat_type !== 'p2p') {
+      const mentions = data.message.mentions ?? [];
+      const botMentioned = botOpenId
+        ? mentions.some((m: { id?: { open_id?: string } }) => m.id?.open_id === botOpenId)
+        : mentions.length > 0;
+      if (!botMentioned) return;
+    }
     if (isDuplicate(msg.message_id)) return;
 
     // 忽略超过 5 分钟的旧消息（防止 WS 重连后重放）
